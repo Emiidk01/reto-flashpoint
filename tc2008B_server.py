@@ -6,8 +6,34 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import json
 
+def parse_map(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    # Parse grid
+    grid = [line.strip().split() for line in lines[:6]]
+
+    # Parse points of interest
+    poi = [line.strip().split() for line in lines[6:9]]
+    poi = [{'row': int(x[0]), 'col': int(x[1]), 'type': x[2]} for x in poi]
+
+    # Parse fire markers
+    fires = [line.strip().split() for line in lines[9:19]]
+    fires = [{'row': int(x[0]), 'col': int(x[1])} for x in fires]
+
+    # Parse doors
+    doors = [line.strip().split() for line in lines[19:27]]
+    doors = [{'r1': int(x[0]), 'c1': int(x[1]), 'r2': int(x[2]), 'c2': int(x[3])} for x in doors]
+
+    # Parse entry points
+    entries = [line.strip().split() for line in lines[27:31]]
+    entries = [{'row': int(x[0]), 'col': int(x[1])} for x in entries]
+
+    return {'grid': grid, 'poi': poi, 'fires': fires, 'doors': doors, 'entries': entries}
+
+
 class Server(BaseHTTPRequestHandler):
-    
+
     def _set_response(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
@@ -18,16 +44,11 @@ class Server(BaseHTTPRequestHandler):
         self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
 
     def do_POST(self):
-        position = {
-            "x" : 1,
-            "y" : 2,
-            "z" : 3
-        }
-
+        map_data = parse_map('config_inicial.txt')
         self._set_response()
-        self.wfile.write(str(position).encode('utf-8'))
+        self.wfile.write(json.dumps(map_data).encode('utf-8'))
 
-
+    
 def run(server_class=HTTPServer, handler_class=Server, port=8585):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
