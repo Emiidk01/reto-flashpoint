@@ -10,6 +10,8 @@ using UnityEngine.Networking;
 
 public class WebClient : MonoBehaviour
 {
+    public GameObject sphere;  // La esfera de prueba que se desea mover
+
     // IEnumerator - yield return
     IEnumerator SendData(string data)
     {
@@ -25,16 +27,19 @@ public class WebClient : MonoBehaviour
             www.SetRequestHeader("Content-Type", "application/json");
 
             yield return www.SendWebRequest();          // Talk to Python
-            if(www.isNetworkError || www.isHttpError)
+            if (www.isNetworkError || www.isHttpError)
             {
                 Debug.Log(www.error);
             }
             else
             {
+                // Recibe la respuesta del servidor y mueve la esfera
                 Debug.Log(www.downloadHandler.text);    // Answer from Python
-                Vector3 tPos = JsonUtility.FromJson<Vector3>(www.downloadHandler.text.Replace('\'', '\"'));
+                Vector3 newPosition = JsonUtility.FromJson<Vector3>(www.downloadHandler.text.Replace('\'', '\"'));
+                sphere.transform.position = newPosition;
+                Debug.Log("Esfera movida a: " + newPosition);
                 //Debug.Log("Form upload complete!");
-                Debug.Log(tPos);
+                Debug.Log(newPosition);
             }
         }
 
@@ -55,6 +60,7 @@ public class WebClient : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
+
     }
 }
