@@ -49,7 +49,9 @@ class Server(BaseHTTPRequestHandler):
                 r, c = lines[i].strip().split()
                 entradas.append({"row": int(r), "col": int(c)})
 
+
             # Crear el diccionario que contiene todos los datos
+
             config_data = {
                 "celdas": celdas,
                 "puntos_interes": puntos_interes,
@@ -57,6 +59,7 @@ class Server(BaseHTTPRequestHandler):
                 "puertas": puertas,
                 "entradas": entradas
             }
+            config_data["celdas"] = [{str(index + 1): valor for index, valor in enumerate(fila)} for fila in config_data["celdas"]]
 
             print("Configuración enviada:", config_data)  # Agregar este print para ver la configuración en la consola del servidor
 
