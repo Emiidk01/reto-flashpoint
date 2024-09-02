@@ -23,8 +23,8 @@ class Server(BaseHTTPRequestHandler):
             celdas = []
             for i in range(6):
                 fila = lines[i].strip().split()
-                celdas.append([int(group, 2) for group in fila])  # Convertir cada grupo de 4 dígitos a un entero
-            
+                celdas.append(fila)  # Mantener cada grupo de 4 dígitos como una cadena de texto
+
             # Procesar los puntos de interés (3 líneas siguientes)
             puntos_interes = []
             for i in range(6, 9):

@@ -10,7 +10,7 @@ using System.Collections.Generic;
 public class WebClient : MonoBehaviour
 {
 
-    public GameObject CeldaPrefab;
+    public GameObject WallPrefab;
     public GameObject PuntoInteresPrefab;
     public GameObject FuegoPrefab;
     public GameObject PuertaPrefab;
@@ -57,11 +57,22 @@ public class WebClient : MonoBehaviour
     [System.Serializable]
     public class ConfigData
     {
-        public List<Celda> celdas;
+        public List<string> celdasFlat;  // Lista plana para deserialización inicial
+        public List<List<string>> celdas; // Aquí cada sublista es una fila de celdas
         public List<PuntoInteres> puntos_interes;
         public List<Fuego> fuego;
         public List<Puerta> puertas;
         public List<Entrada> entradas;
+
+        public void ProcessCeldas(int rowLength)
+        {
+            celdas = new List<List<string>>();
+            for (int i = 0; i < celdasFlat.Count; i += rowLength)
+            {
+                List<string> row = celdasFlat.GetRange(i, rowLength);
+                celdas.Add(row);
+            }
+        }
     }
 
 
@@ -84,11 +95,20 @@ public class WebClient : MonoBehaviour
             else
             {
                 string jsonReceived = webRequest.downloadHandler.text;
-                Debug.Log("JSON recibido: " + jsonReceived); // Agregar este log
-                ConfigData config = JsonUtility.FromJson<ConfigData>(webRequest.downloadHandler.text);
+                Debug.Log("JSON recibido: " + jsonReceived);
 
-                // Aquí puedes instanciar los prefabs según los datos de config
-                RenderizarMapa(config);
+                ConfigData config = JsonUtility.FromJson<ConfigData>(jsonReceived);
+
+                if (config == null || config.celdasFlat == null)
+                {
+                    Debug.LogError("Config data or celdasFlat is null after deserialization!");
+                }
+                else
+                {
+                    // Procesa las celdas para reconstruir la lista anidada
+                    config.ProcessCeldas(8); // Asume que cada fila tiene 8 columnas
+                    RenderizarMapa(config);
+                }
             }
         }
     }
@@ -96,22 +116,83 @@ public class WebClient : MonoBehaviour
     // Start is called before the first frame update
     void RenderizarMapa(ConfigData config)
     {
-        // Instanciar celdas
-        for (int i = 0; i < config.celdas.Count; i++)
+        // Instanciar paredes (pendiente)
+        if (config == null)
         {
-            Debug.Log("config.celdas[i].celdas.Length");
-            //for (int j = 0; j < config.celdas[i].celdas.Length; j++)
-            //{
-            // Instancia la celda en la posición (i, j)
-            //Vector3 position = new Vector3(i, 0, j); // Posición en Unity, ajusta según sea necesario
-            // Instantiate(CeldaPrefab, position, Quaternion.identity);
-            //Debug.Log($"Celda instanciada en posición: {position}"); // Log para verificar la posición
-
-            // Aquí puedes configurar las paredes de la celda basadas en los dígitos de config.celdas[i][j]
-            //}
+            Debug.LogError("Config data is null!");
+            return;
         }
 
-        // Instanciar puntos de interés
+        if (config.celdas == null)
+        {
+            Debug.LogError("Config data's celdas is null!");
+            return;
+        }
+
+        for (int row = 0; row < config.celdas.Count; row++)
+        {
+            var fila = config.celdas[row];
+            if (fila == null)
+            {
+                Debug.LogError($"Fila {row} es null!");
+                continue;
+            }
+
+            for (int col = 0; col < fila.Count; col++)
+            {
+                string cell = fila[col];
+                if (cell == null)
+                {
+                    Debug.LogError($"Celda en fila {row}, columna {col} es null!");
+                    continue;
+                }
+
+                Vector3 position = new Vector3(row, 0, col);
+
+                if (cell[0] == '1') // Pared arriba
+                {
+                    if (WallPrefab == null)
+                    {
+                        Debug.LogError("WallPrefab is not assigned!");
+                        continue;
+                    }
+                    Vector3 wallPosition = position + new Vector3(0, 0, 0.5f);
+                    Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                }
+                if (cell[1] == '1') // Pared izquierda
+                {
+                    if (WallPrefab == null)
+                    {
+                        Debug.LogError("WallPrefab is not assigned!");
+                        continue;
+                    }
+                    Vector3 wallPosition = position + new Vector3(-0.5f, 0, 0);
+                    Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                }
+                if (cell[2] == '1') // Pared abajo
+                {
+                    if (WallPrefab == null)
+                    {
+                        Debug.LogError("WallPrefab is not assigned!");
+                        continue;
+                    }
+                    Vector3 wallPosition = position + new Vector3(0, 0, -0.5f);
+                    Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                }
+                if (cell[3] == '1') // Pared derecha
+                {
+                    if (WallPrefab == null)
+                    {
+                        Debug.LogError("WallPrefab is not assigned!");
+                        continue;
+                    }
+                    Vector3 wallPosition = position + new Vector3(0.5f, 0, 0);
+                    Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                }
+            }
+        }
+
+        // Instanciar puntos de interés (funciona)
         foreach (var punto in config.puntos_interes)
         {
             Vector3 position = new Vector3(punto.row, 0, punto.col); // Posición en Unity
@@ -127,7 +208,7 @@ public class WebClient : MonoBehaviour
             Instantiate(prefab, position, Quaternion.identity);
         }
 
-        // Instanciar fuego
+        // Instanciar fuego (funciona)
         foreach (var fuego in config.fuego)
         {
             Vector3 position = new Vector3(fuego.row, 0, fuego.col); // Posición en Unity
@@ -135,24 +216,57 @@ public class WebClient : MonoBehaviour
             Debug.Log($"Fuego instanciado en posición: {position}"); // Log para fuego
         }
 
-        // Instanciar puertas
+        // Instanciar puertas (funciona)
         foreach (var puerta in config.puertas)
         {
-            Vector3 position1 = new Vector3(puerta.r1, 0, puerta.c1); // Posición en Unity para el primer extremo de la puerta
-            Vector3 position2 = new Vector3(puerta.r2, 0, puerta.c2); // Posición en Unity para el segundo extremo de la puerta
-            Instantiate(PuertaPrefab, (position1 + position2) / 2, Quaternion.identity); // Posicionar la puerta en el centro entre las dos celdas
-            Debug.Log($"Puerta instanciada entre posición: {position1} y {position2}"); // Log para puertas
+            Vector3 position1 = new Vector3(puerta.r1, 0, puerta.c1); // Posición de la primera celda
+            Vector3 position2 = new Vector3(puerta.r2, 0, puerta.c2); // Posición de la segunda celda
+            Vector3 position = (position1 + position2) / 2; // Posición central para la puerta
 
+            Quaternion rotation;
 
-            // Puedes rotar la puerta o ajustarla según cómo se conecten las celdas
+            // Determinar si la puerta es horizontal o vertical
+            if (puerta.c1 == puerta.c2)
+            {
+                // Las celdas están en la misma fila, la puerta es vertical
+                rotation = Quaternion.Euler(0, 90, 0); // Rotación de 90 grados en Y
+            }
+            else
+            {
+                // Las celdas están en la misma columna, la puerta es horizontal
+                rotation = Quaternion.identity; // No rotación (o 0 grados en Y)
+            }
+
+            // Instanciar la puerta en la posición y con la rotación calculada
+            Instantiate(PuertaPrefab, position, rotation);
+            Debug.Log($"Puerta instanciada en posición: {position} con rotación: {rotation.eulerAngles}");
         }
 
-        // Instanciar entradas
+        // Instanciar entradas (funciona)
         foreach (var entrada in config.entradas)
         {
             Vector3 position = new Vector3(entrada.row, 0, entrada.col); // Posición en Unity
-            Instantiate(EntradaPrefab, position, Quaternion.identity);
-            Debug.Log($"Entrada instanciada en posición: {position}"); // Log para entradas
+            Quaternion rotation = Quaternion.identity; // No rotación por defecto
+
+            if (entrada.row == 1) // Si la entrada está en la fila superior
+            {
+                rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia abajo
+            }
+            else if (entrada.row == 6) // Si la entrada está en la fila inferior
+            {
+                rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia arriba
+            }
+            else if (entrada.col == 1) // Si la entrada está en la primera columna
+            {
+                rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la derecha
+            }
+            else if (entrada.col == 8) // Si la entrada está en la última columna
+            {
+                rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la izquierda
+            }
+
+            Instantiate(EntradaPrefab, position, rotation); // Usar la rotación calculada
+            Debug.Log($"Entrada instanciada en posición: {position} con rotación: {rotation.eulerAngles}"); // Log para entradas
         }
     }
 }
