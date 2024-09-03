@@ -226,12 +226,41 @@ public class WebClient : MonoBehaviour
             {
                 // Las celdas están en la misma fila, la puerta es vertical
                 rotation = Quaternion.Euler(0, 90, 0); // Rotación de 90 grados en Y
+                string objectName = $"({puerta.r1},{puerta.c1}) Bottom Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
+                string objectName2 = $"({puerta.r2},{puerta.c2}) Top Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall2 = GameObject.Find(objectName2);
+
+                if (posibleWall2 != null)
+                {
+                    Destroy(posibleWall2);
+                }
             }
             else
             {
                 // Las celdas están en la misma columna, la puerta es horizontal
                 rotation = Quaternion.identity; // No rotación (o 0 grados en Y)
+                string objectName = $"({puerta.r1},{puerta.c1}) Right Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
+                string objectName2 = $"({puerta.r2},{puerta.c2}) Left Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall2 = GameObject.Find(objectName2);
+
+                if (posibleWall2 != null)
+                {
+                    Destroy(posibleWall2);
+                }
             }
+            
 
             // Instanciar la puerta en la posición y con la rotación calculada
             GameObject puertaObjeto =Instantiate(PuertaPrefab, position, rotation);
@@ -247,16 +276,32 @@ public class WebClient : MonoBehaviour
             Quaternion rotation = Quaternion.identity; // No rotación por defecto
 
             if (entrada.row == 1) // Si la entrada está en la fila superior
-            {
+            {   
+                string objectName = $"({entrada.row},{entrada.col}) Top Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
+
                 rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia abajo
                 Vector3 position2 = position + new Vector3(-0.5f, 0, 0);
                 GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
                 entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
-
+                
 
             }
             else if (entrada.row == 6) // Si la entrada está en la fila inferior
             {
+                string objectName = $"({entrada.row},{entrada.col}) Bottom Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
+                
                 rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia arriba
                 Vector3 position2 = position + new Vector3(0.5f, 0, 0);
                 GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
@@ -265,6 +310,13 @@ public class WebClient : MonoBehaviour
             }
             else if (entrada.col == 1) // Si la entrada está en la primera columna
             {
+                string objectName = $"({entrada.row},{entrada.col}) Left Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
                 rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la derecha
                 Vector3 position2 = position + new Vector3(0, 0, -0.5f);
                 GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
@@ -272,6 +324,13 @@ public class WebClient : MonoBehaviour
             }
             else if (entrada.col == 8) // Si la entrada está en la última columna
             {
+                string objectName = $"({entrada.row},{entrada.col}) Right Wall"; // Nombre del objeto que buscas
+                GameObject posibleWall = GameObject.Find(objectName);
+
+                if (posibleWall != null)
+                {
+                    Destroy(posibleWall);
+                }
                 rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la izquierda
                 Vector3 position2 = position + new Vector3(0, 0, 0.5f);
                 GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
