@@ -2462,6 +2462,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   WallPrefab: {fileID: 1834614473471935738, guid: 83ed730e757819f44af78f9863c04538, type: 3}
+  CrackedWallPrefab: {fileID: 6757908446823779388, guid: 946d699dd4ed7d7498f8578e993a2be0, type: 3}
+  BrokenWallPrefab: {fileID: 8516865048088105131, guid: 5679be7378902e94789deea3e7437301, type: 3}
   PuntoInteresPrefab: {fileID: 6268068240875667852, guid: 835c1b870d2264f4b89cb34aae2264e6, type: 3}
   FuegoPrefab: {fileID: 8950955111051258720, guid: 4fb6d4108cae1ed46bec7b10722f4650, type: 3}
   PuertaPrefab: {fileID: 689769106613316229, guid: 2692867c5345d2b43be1cc5e2d1b920f, type: 3}
