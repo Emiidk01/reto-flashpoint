@@ -140,7 +140,8 @@ public class WebClient : MonoBehaviour
                         }
                         
                         Vector3 wallPosition = position + new Vector3(-0.5f, 0, 0);
-                        Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                        GameObject wall = Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                        wall.name = $"({row},{col}) Top Wall";
                     }
                     if (kvp.Value[1] == '1') // Pared izquierda
                     {
@@ -151,7 +152,9 @@ public class WebClient : MonoBehaviour
                         }
                         
                         Vector3 wallPosition = position + new Vector3(0, 0, -0.5f);
-                        Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                        GameObject wall = Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                        wall.name = $"({row},{col}) Left Wall";
+
                     }
                     if (kvp.Value[2] == '1') // Pared abajo
                     {
@@ -161,7 +164,9 @@ public class WebClient : MonoBehaviour
                             continue;
                         }
                         Vector3 wallPosition = position + new Vector3(0.5f, 0, 0);
-                        Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                        GameObject wall = Instantiate(WallPrefab, wallPosition, Quaternion.Euler(0, 90, 0));
+                        wall.name = $"({row},{col}) Bottom Wall";
+                        
                     }
                     if (kvp.Value[3] == '1') // Pared derecha
                     {
@@ -172,7 +177,8 @@ public class WebClient : MonoBehaviour
                         }
                         
                         Vector3 wallPosition = position + new Vector3(0, 0, 0.5f);
-                        Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                        GameObject wall =Instantiate(WallPrefab, wallPosition, Quaternion.identity);
+                        wall.name = $"({row},{col}) Right Wall";
                     }
             
                     
@@ -192,14 +198,17 @@ public class WebClient : MonoBehaviour
             {
                 // Cambia prefab si tienes uno específico para falsas alarmas
             }
-            Instantiate(prefab, position, prefab.transform.rotation);
+            GameObject puntoInteres = Instantiate(prefab, position, prefab.transform.rotation);
+            puntoInteres.name = $"({punto.row},{punto.col}) Point of Interest ({punto.type})";
+
         }
 
         // Instanciar fuego (funciona)
         foreach (var fuego in config.fuego)
         {
             Vector3 position = new Vector3(fuego.row, 0, fuego.col); // Posición en Unity
-            Instantiate(FuegoPrefab, position, Quaternion.identity);
+            GameObject fuegoObjeto = Instantiate(FuegoPrefab, position, Quaternion.identity);
+            fuegoObjeto.name = $"({fuego.row},{fuego.col}) Fire";
             Debug.Log($"Fuego instanciado en posición: {position}"); // Log para fuego
         }
 
@@ -225,7 +234,9 @@ public class WebClient : MonoBehaviour
             }
 
             // Instanciar la puerta en la posición y con la rotación calculada
-            Instantiate(PuertaPrefab, position, rotation);
+            GameObject puertaObjeto =Instantiate(PuertaPrefab, position, rotation);
+            puertaObjeto.name = $"({puerta.r1},{puerta.c1}) to ({puerta.r2},{puerta.c2}) Door";
+
             Debug.Log($"Puerta instanciada en posición: {position} con rotación: {rotation.eulerAngles}");
         }
 
@@ -239,26 +250,32 @@ public class WebClient : MonoBehaviour
             {
                 rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia abajo
                 Vector3 position2 = position + new Vector3(-0.5f, 0, 0);
-                Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
+
 
             }
             else if (entrada.row == 6) // Si la entrada está en la fila inferior
             {
                 rotation = Quaternion.Euler(0, 90, 0); // Apunta hacia arriba
                 Vector3 position2 = position + new Vector3(0.5f, 0, 0);
-                Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
+
             }
             else if (entrada.col == 1) // Si la entrada está en la primera columna
             {
                 rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la derecha
                 Vector3 position2 = position + new Vector3(0, 0, -0.5f);
-                Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
             }
             else if (entrada.col == 8) // Si la entrada está en la última columna
             {
                 rotation = Quaternion.Euler(0, 0, 0); // Apunta hacia la izquierda
                 Vector3 position2 = position + new Vector3(0, 0, 0.5f);
-                Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                GameObject entradaObjeto = Instantiate(EntradaPrefab, position2, rotation); // Usar la rotación calculada
+                entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
 
             }
 
