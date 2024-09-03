@@ -337,8 +337,6 @@ public class WebClient : MonoBehaviour
                 entradaObjeto.name = $"({entrada.row},{entrada.col}) Entry";
 
             }
-
-            // Debug.Log($"Entrada instanciada en posición: {position} con rotación: {rotation.eulerAngles}"); // Log para entradas
         }
     }
 }
