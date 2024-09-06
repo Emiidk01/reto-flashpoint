@@ -1,3 +1,4 @@
+# Importamos las librerías necesarias para el modelo. 
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
@@ -20,12 +21,15 @@ from sys import argv
 import threading
 import requests 
 
+
+# Algoritmo de búsqueda A* para encontrar la ruta más corta entre un punto de inicio y un destino
 def astar_pathfinding(grid_state, start, goal):
     def heuristic(a, b):
-        # Manhattan distance heuristic
+        # Heurística de distancia Manhattan para estimar la distancia entre dos puntos
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
     def get_neighbors(node):
+        # Devuelve los vecinos válidos (movimientos posibles) desde un nodo
         (x, y) = node
         # Possible moves (right, left, down, up)
         neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
@@ -36,6 +40,7 @@ def astar_pathfinding(grid_state, start, goal):
                 valid_neighbors.append((nx, ny))
         return valid_neighbors
 
+    # Lista de nodos abiertos por explorar
     open_set = []
     heapq.heappush(open_set, (0 + heuristic(start, goal), 0, start))
     came_from = {}
@@ -43,6 +48,7 @@ def astar_pathfinding(grid_state, start, goal):
     came_from[start] = None
     cost_so_far[start] = 0
 
+    # Bucle principal de búsqueda A*
     while open_set:
         _, current_cost, current = heapq.heappop(open_set)
 
@@ -55,7 +61,7 @@ def astar_pathfinding(grid_state, start, goal):
             return path[::-1]
 
         for neighbor in get_neighbors(current):
-            new_cost = cost_so_far[current] + 1  # Assume each step has the same cost
+            new_cost = cost_so_far[current] + 1  # Asume que cada paso tiene el mismo costo
             if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
                 cost_so_far[neighbor] = new_cost
                 priority = new_cost + heuristic(goal, neighbor)
@@ -77,42 +83,12 @@ SPAWNEO_FIREMARKERS = []
 SPAWNEO_PUERTAS = [] # 8 puertas
 SPAWNEO_EXTERIORES = []
 SPAWNEO_PAREDES = []
-POOL_POIS = ['f', 'f', 'f', 'f', 'f', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v'] # 10 Victimas
+POOL_POIS = ['f', 'f', 'f', 'f', 'f', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v'] # f: falso, v: víctima real
 SPAWNEO_POIS = [] 
 WC_VICTIMAS = 0
 LC_VICTIMAS = 0
 FILA_DE_BOMEROS = []
  
-# MSIGUIENTE MISION: flame vs victims 
-# While flame count > 5: DIJKSTRA(FLAMES) else: DIJKSTRA(POIS)
-# get danger_weight DIJKSTRA thme based on danger_weight
-# primer intento: Quita las flamas y con solo un bombero logra rescatar las victimas CON DIJKSTRA
-# Dijkstra must have built-in con las walls en el pathfinding
-
-# SIGUIENTE MISION: QUE LOS ROBOTS SE MUEVAN EN STEPS SEPARADOS Y NO EN UN STEP COMBINADO
-
-# LAST MISION: FLAME PROMOTION SYSTEM
-# if smoke spawns near a fire it gets instantly promoted to fire side
-# if smoke spawns ON a fire it instantly explodes
-# the dice pretty much adds smoke and thats it
-# the Explosion() goes into another Explosion() if flame in cruz
-# since it has Chain_Reaction() this stops at: moore=False
-#   1. Wall nearby gets one damage point/ two damage points
-#   2. Empty space gets turned into flame
-#   3. Door gets destroyed and permanently gets openned resulting in:
-#       3.1 If openned, then flame at empty in the same vector
-#       3.2 If closed, only door gets destroyed
-#   If flame spawns at POI and POI.hasVictim() then victim teleported 
-# THE FLIPPING OF SMOKE IS ALSO IN Chain_reaction()
-
-        # if total_flames < 6:
-            # 1. self.path() towards POI
-            # 2. if self.has_victim == True, self.path() towards exit
-        # else: # meaning total_flames more than 5
-            # 1. self.path() towards highest danger_level flame
-            # 2. extinguish everything in the way in a radius of 1
-        # self.path clears at the end of the turn and only moves in range of ACTION_POINTS
-
 class BomberoAgent(Agent):
     def __init__(self, unique_id, model, spawn_point):
         super().__init__(unique_id, model)
@@ -121,19 +97,19 @@ class BomberoAgent(Agent):
         self.path = []
         self.target_cell = ()
         self.has_victim = False
-        self.poi_aux = '' # just here for simplicity
+        self.poi_aux = ''
         self.action_per_turn = True
         self.spawn_point = spawn_point
 
+    # Método que ejecuta las acciones del agente en cada paso del modelo
     def step(self):
         global WC_VICTIMAS
-        # Habilidad 0 - Atravesar puertas y pois no ocupables
-        # espera, el poi que sea, si lo atraviesa se descubre siempre
-        # debes tener un marcador para victimas reales
+
+        # Lógica para atravesar puertas o detectar POIs
         if self.model.grid_state[self.pos] == 12:
             self.model.grid_state[self.pos] = 0
 
-        # Habilidad 1 - Rescatar victima
+         # Lógica para rescatar una víctima si está en la celda objetivo
         if self.has_victim == False:
             if self.pos == self.target_cell:
                     if self.poi_aux == 'v':
@@ -145,13 +121,15 @@ class BomberoAgent(Agent):
                     self.path.clear()
                     self.model.poi_refill()
                     self.model.grid_state[self.pos] = 0
+        
+        # Lógica para dejar a la víctima en la salida
         if (self.pos[0] == 0 or self.pos[1] == 0) and self.has_victim:
             #print("Se ha rescatado una victima!")
             WC_VICTIMAS += 1
             self.has_victim = False
             self.path.clear()
 
-        # Habilidad 2 - Apagar fuegos
+        # Lógica para apagar fuegos en celdas adyacentes
         red_coor, black_coor = self.pos
         cruz_r2 = [(red_coor, black_coor-2), (red_coor-2, black_coor), (red_coor, black_coor+2), (red_coor+2, black_coor)]
         for coor in cruz_r2:
@@ -431,13 +409,6 @@ pasos_empleados_para_limpiar_todo = 0
 CURRENT_JSON = json.dumps("xd").encode('utf-8')
 
 # Procesamiento Final
-# Procesamiento Final
-# Procesamiento Final
-# Procesamiento Final
-# Procesamiento Final
-# Procesamiento Final
-# Procesamiento Final
-
 class Server(BaseHTTPRequestHandler):
     def _set_response(self, content_type='application/json', status=200):
         self.send_response(status)
