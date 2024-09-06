@@ -72,7 +72,7 @@ class POI:
 
 
 # CONFIGURACIÓN DEL JUEGO, obtenidos de setDeNumeros.txt
-SPAWNEO_BOMBEROS = [(6,0)] # generalist only
+SPAWNEO_BOMBEROS = [(6,0), (8,0), (14, 6), (14, 4), (8, 18), (0, 12)] # generalist only
 SPAWNEO_FIREMARKERS = []
 SPAWNEO_PUERTAS = [] # 8 puertas
 SPAWNEO_EXTERIORES = []
@@ -80,6 +80,8 @@ SPAWNEO_PAREDES = []
 POOL_POIS = ['f', 'f', 'f', 'f', 'f', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v', 'v'] # 10 Victimas
 SPAWNEO_POIS = [] 
 WC_VICTIMAS = 0
+LC_VICTIMAS = 0
+FILA_DE_BOMEROS = []
  
 # MSIGUIENTE MISION: flame vs victims 
 # While flame count > 5: DIJKSTRA(FLAMES) else: DIJKSTRA(POIS)
@@ -112,18 +114,18 @@ WC_VICTIMAS = 0
         # self.path clears at the end of the turn and only moves in range of ACTION_POINTS
 
 class BomberoAgent(Agent):
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, model, spawn_point):
         super().__init__(unique_id, model)
+        self.id = unique_id
         self.action_points = 0  
         self.path = []
         self.target_cell = ()
         self.has_victim = False
         self.poi_aux = '' # just here for simplicity
-
         self.action_per_turn = True
+        self.spawn_point = spawn_point
 
     def step(self):
-        
         global WC_VICTIMAS
         # Habilidad 0 - Atravesar puertas y pois no ocupables
         # espera, el poi que sea, si lo atraviesa se descubre siempre
@@ -141,7 +143,7 @@ class BomberoAgent(Agent):
                         #print("FASLE ALARMA YEYEYEYEY")
                     # si le poi existe en el agente, siempre redireccion
                     self.path.clear()
-                    self.poi_refill()
+                    self.model.poi_refill()
                     self.model.grid_state[self.pos] = 0
         if (self.pos[0] == 0 or self.pos[1] == 0) and self.has_victim:
             #print("Se ha rescatado una victima!")
@@ -154,11 +156,10 @@ class BomberoAgent(Agent):
         cruz_r2 = [(red_coor, black_coor-2), (red_coor-2, black_coor), (red_coor, black_coor+2), (red_coor+2, black_coor)]
         for coor in cruz_r2:
             x,y = coor
-            if x > 0 and y > 0:
-                if self.model.grid_state[(coor)] == 4:
+            if x > 0 and y > 0 and x < HEIGTH and y < WIDTH:
+                if self.model.grid_state[(coor)] == 7:
                     self.model.grid_state[(coor)] = 0
                     
-        
         apagar_fuego = False
         cruz_r1 = list(self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False))
         for coor_r1 in cruz_r1:
@@ -178,7 +179,7 @@ class BomberoAgent(Agent):
                 if self.model.grid.is_cell_empty(next_position):
                     self.model.grid.move_agent(self, next_position)
         elif self.has_victim:  # If there is a victim, find a path to the rescue location
-            self.path_finder((6, 0))
+            self.path_finder((6, 0)) # SET TO SPAWN POINT, SELF.SPAWN_POINT
         else:  # If there is no path and no victim, find a path to a POI
             if SPAWNEO_POIS:  # Check if SPAWNEO_POIS is not empty
                 poi = SPAWNEO_POIS.pop()  # as a fila, appends at the end, works on the last one
@@ -197,22 +198,6 @@ class BomberoAgent(Agent):
             #print(f"Path found from {start} to {target}: {self.path}")
         #else:
             #print(f"Target {target} is out of bounds.")
-        
-    def poi_refill(self):
-        global POOL_POIS # para prevenir errores
-        while len(SPAWNEO_POIS) < 3 and POOL_POIS:
-            x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
-            while self.model.grid_state[(x,y)] > 5:
-                x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
-            # el pop a la pool de pois solo ocurre aqui
-            poi_type = (random.choice(POOL_POIS))
-            if poi_type == "v":
-                POOL_POIS.pop()
-            else:
-                POOL_POIS.pop(0)
-            self.model.grid_state[(x,y)] = 2
-            SPAWNEO_POIS.append(POI(x, y, poi_type))
-            #print("Poi añadido: " + str(x) + ", " + str(y) + ", " + poi_type)
 
 def get_grid(model): # Función auxiliar para mejorar la grid
     return model.grid_state.copy()
@@ -228,23 +213,21 @@ class BomberoModel(Model):
 
         # Crear BOMBEROS y colocarlos en la cuadrícula
         for id in range(len(SPAWNEO_BOMBEROS)):
-            a = BomberoAgent(id, self)
             posicion = SPAWNEO_BOMBEROS[id]
-            if 0 <= posicion[0] < HEIGTH and 0 <= posicion[1] < WIDTH:
-                self.grid.place_agent(a, posicion)
-                self.grid_state[posicion] = 12
-                self.schedule.add(a)
-            else:
-                raise ValueError(f"Posición fuera de rango para el bombero {id}: {posicion}")
+            a = BomberoAgent(id, self, posicion)
+            self.grid.place_agent(a, posicion)
+            self.grid_state[posicion] = 12
+            self.schedule.add(a)
+            FILA_DE_BOMEROS.append(a)
 
         # Crear FUEGOS y colocarlos en la cuadrícula
         for fire_coor in SPAWNEO_FIREMARKERS: 
-            self.grid_state[fire_coor] = 4
+            self.grid_state[fire_coor] = 7
 
         # Crear POIs y colocarlos en la cuadrícula
         for spawn in SPAWNEO_POIS:  # 3 POIs iniciales
             coor = (spawn.red_coor, spawn.black_coor)
-            self.grid_state[coor] = 2
+            self.grid_state[coor] = 1
 
         # w*w = ESQUINAS
         for j in range(1, 15, 2):
@@ -269,9 +252,65 @@ class BomberoModel(Model):
         self.datacollector.collect(self)
         self.schedule.step()
 
+    def poi_refill(self):
+        global POOL_POIS # para prevenir errores
+        while len(SPAWNEO_POIS) < 3 and POOL_POIS:
+            x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
+            while self.grid_state[(x,y)] > 5:
+                x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
+            # el pop a la pool de pois solo ocurre aqui
+            poi_type = (random.choice(POOL_POIS))
+            if poi_type == "v":
+                POOL_POIS.pop()
+            else:
+                POOL_POIS.pop(0)
+            self.grid_state[(x,y)] = 2
+            SPAWNEO_POIS.append(POI(x, y, poi_type))
+            #print("Poi añadido: " + str(x) + ", " + str(y) + ", " + poi_type)
+
+    def roll_midstep_flame(self):
+        global LC_VICTIMAS
+        x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
+        while self.grid_state[(x,y)] > 5:
+            x, y = (random.randint(1, 6) * 2, random.randint(1, 8) * 2)
+
+        coor = (x,y)
+        coor_value = self.grid_state[coor]
+
+        if coor_value < 3: # anything -> Smoke
+            self.grid_state[coor] += 3
+            # id.value 7 = Smoke + Agent
+
+        elif coor_value < 8:  # anything+Smoke -> Fire
+            
+            # id.value 4 = Smoke + POI
+            if coor_value == 4:
+                for bombero in FILA_DE_BOMEROS:
+                    if bombero.target_cell == coor:
+                        if bombero.poi_aux == 'v': # the smoke+Poi was victim
+                            LC_VICTIMAS += 1 # kills victim  
+            elif coor_value == 5:
+                LC_VICTIMAS += 1
+                for bombero in FILA_DE_BOMEROS:
+                    if bombero.pos == coor:
+                        self.grid.move_agent(bombero, coor)
+            elif coor_value == 6:
+                for bombero in FILA_DE_BOMEROS:
+                    if bombero.pos == coor:
+                        self.grid.move_agent(bombero, coor)
+
+            # (caso base) id.value 3 = Smoke
+            self.grid_state[coor] = 7
+        else: 
+            # EXPLOSION
+            abc = 123
+
     def winCondition(self):
         if WC_VICTIMAS >= 7:
             print("Se han rescatado 7 victimas!")
+            return True
+        elif LC_VICTIMAS >= 4:
+            print("Se han perdido 4 victimas!")
             return True
         return False
 
@@ -351,14 +390,20 @@ MAX_GENERATIONS = 1000
 COLOR = 12
 HEIGTH = 15
 WIDTH = 19
-# id.value 0 = Empty
-# id.value 2 = POI
-# id.value 4 = Fire
 
-# id.value 9 = Puertas
-# id.value 10 = Paredes
-# - 11
-# id.value 12 = Bombero
+# id.value 0 = Empty
+# id.value 1 = POI
+# id.value 2 = Agent + Victim
+# id.value 3 = Smoke
+# id.value 4 = Smoke + POI
+# id.value 5 = Smoke + Agent + Victim
+# id.value 6 = Smoke + Agent
+# id.value 7 = Fire
+# id.value 8 = Puerta Exterior
+# id.value 9 = Pared
+# id.value 10 = Puerta
+# id.value 11 = 
+# id.value 12 = Agent
 
 def build_json(i):
     all_grid = model.datacollector.get_model_vars_dataframe()
@@ -438,19 +483,21 @@ if __name__ == '__main__':
     server_thread.start()
 
     time.sleep(5)  # Give the server time to start
-
     for i in range(MAX_GENERATIONS):
-        
-        model.step()  # Update the JSON periodically
-        # GET JSON MUST BE AFTER MODEL.STEP()
+        pasos_empleados_para_limpiar_todo += 1
+        model.step()
+        bombero = FILA_DE_BOMEROS.pop(0)
+        FILA_DE_BOMEROS.append(bombero)
+        bombero.step()
+        model.roll_midstep_flame()
+
         CURRENT_JSON = json.dumps(build_json(i)).encode('utf-8')
-        time.sleep(1)  # Wait between updates 
+        time.sleep(1)
 
         if model.winCondition():
             model.step()
             pasos_empleados_para_limpiar_todo += 1
             MAX_GENERATIONS = pasos_empleados_para_limpiar_todo
             break
-
     print(f"Steps totales: {pasos_empleados_para_limpiar_todo}")
     print('Tiempo de ejecución:', str(datetime.timedelta(seconds=(time.time() - start_time))))
